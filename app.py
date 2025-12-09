@@ -267,11 +267,16 @@ def show_add_food():
     st.subheader("📸 사진으로 빠르게 추가")
     st.caption("💡 여러 장 업로드 가능 (앞면, 뒷면 등)")
 
+    # 파일 업로더 키 초기화 (음식 추가 후 리셋용)
+    if 'uploader_key' not in st.session_state:
+        st.session_state.uploader_key = 0
+
     uploaded_files = st.file_uploader(
         "음식 사진을 업로드하세요 (AI가 자동으로 인식합니다)",
         type=['jpg', 'jpeg', 'png'],
         accept_multiple_files=True,
-        help="여러 장의 사진을 업로드할 수 있습니다 (예: 앞면, 뒷면)"
+        help="여러 장의 사진을 업로드할 수 있습니다 (예: 앞면, 뒷면)",
+        key=f"uploader_{st.session_state.uploader_key}"
     )
 
     # 세션 스테이트 초기화
@@ -450,6 +455,9 @@ def show_add_food():
                 # AI 결과 및 추정 소비기한 초기화
                 st.session_state.ai_result = None
                 st.session_state.estimated_shelf_life = None
+
+                # 파일 업로더 키 변경 (파일 업로더 리셋)
+                st.session_state.uploader_key += 1
 
                 # 성공 메시지 (토스트는 rerun 후에도 표시됨)
                 st.toast(f"✅ '{name}' 추가 완료!", icon="✅")
