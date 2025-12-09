@@ -146,18 +146,33 @@ def show_dashboard():
     if 'dashboard_filter' not in st.session_state:
         st.session_state.dashboard_filter = None
 
-    # 통계
+    # 통계 (한 줄로 압축)
     all_foods = db.get_all_foods()
     expiring_soon = db.get_expiring_soon(days=3)
     expired = db.get_expired_foods()
 
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.metric("전체 음식", len(all_foods))
-    with col2:
-        st.metric("임박 (3일 이내)", len(expiring_soon), delta=None, delta_color="inverse")
-    with col3:
-        st.metric("만료됨", len(expired), delta=None, delta_color="inverse")
+    # 컬러를 활용한 압축 통계
+    st.markdown(f"""
+    <div style='background: linear-gradient(90deg, #E3F2FD 0%, #FFF9C4 33%, #FFCDD2 66%, #E8F5E9 100%);
+                padding: 15px; border-radius: 10px; margin-bottom: 20px;'>
+        <div style='display: flex; justify-content: space-around; align-items: center; text-align: center;'>
+            <div style='flex: 1;'>
+                <div style='font-size: 28px; font-weight: bold; color: #1976D2;'>{len(all_foods)}</div>
+                <div style='font-size: 14px; color: #555;'>전체 음식</div>
+            </div>
+            <div style='border-left: 2px solid #ddd; height: 40px;'></div>
+            <div style='flex: 1;'>
+                <div style='font-size: 28px; font-weight: bold; color: #F57C00;'>{len(expiring_soon)}</div>
+                <div style='font-size: 14px; color: #555;'>임박 (3일)</div>
+            </div>
+            <div style='border-left: 2px solid #ddd; height: 40px;'></div>
+            <div style='flex: 1;'>
+                <div style='font-size: 28px; font-weight: bold; color: #D32F2F;'>{len(expired)}</div>
+                <div style='font-size: 14px; color: #555;'>만료됨</div>
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
     # 날짜별 소비기한 캘린더 (맨 위로 이동)
     if all_foods:
