@@ -710,25 +710,8 @@ def show_food_list():
             days_text = f"D+{abs(days)}"
 
         with st.container(border=True):
-            # 1줄: 이름 + D-day (한 줄에) + 버튼들
-            col_name, col_btns = st.columns([7, 2])
-
-            with col_name:
-                # 이름과 D-day를 한 줄에 표시
-                st.markdown(f"**{STATUS_COLORS[food.status()]} {location_icon} {food.name}** <span style='font-size: 20px; font-weight: bold; color: #4CAF50; margin-left: 15px;'>{days_text}</span>", unsafe_allow_html=True)
-
-            with col_btns:
-                # 버튼들을 가로로 배치
-                btn_col1, btn_col2 = st.columns(2)
-                with btn_col1:
-                    if st.button("✏️", key=f"edit_{food.id}", help="수정"):
-                        st.session_state.editing_food_id = food.id
-                        st.rerun()
-                with btn_col2:
-                    if st.button("❌", key=f"delete_{food.id}", help="삭제"):
-                        db.delete_food(food.id)
-                        st.session_state.editing_food_id = None
-                        st.rerun()
+            # 1줄: 이름 + D-day (전체 너비)
+            st.markdown(f"**{STATUS_COLORS[food.status()]} {location_icon} {food.name}** <span style='font-size: 20px; font-weight: bold; color: #4CAF50; margin-left: 15px;'>{days_text}</span>", unsafe_allow_html=True)
 
             # 2줄: 카테고리/위치/수량 + 소비기한
             col_info, col_expiry = st.columns([5, 4])
@@ -741,6 +724,18 @@ def show_food_list():
 
             if food.memo:
                 st.caption(f"📝 {food.memo}")
+
+            # 3줄: 버튼들 (맨 아래)
+            btn_col1, btn_col2, btn_col3 = st.columns([1, 1, 8])
+            with btn_col1:
+                if st.button("✏️", key=f"edit_{food.id}", help="수정"):
+                    st.session_state.editing_food_id = food.id
+                    st.rerun()
+            with btn_col2:
+                if st.button("❌", key=f"delete_{food.id}", help="삭제"):
+                    db.delete_food(food.id)
+                    st.session_state.editing_food_id = None
+                    st.rerun()
 
             # 편집 폼 표시
             if st.session_state.editing_food_id == food.id:
