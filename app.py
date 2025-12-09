@@ -521,6 +521,8 @@ def show_add_food():
         default_location_idx = LOCATIONS.index(ai_result['location']) if ai_result['location'] in LOCATIONS else 0
         default_expiry_days = ai_result['estimated_shelf_life_days']
         default_quantity = float(ai_result.get('quantity', 1.0))
+        # OCR로 읽은 실제 날짜가 있는지 확인
+        detected_date = ai_result.get('detected_date')
     # 소비기한 추정 결과가 있으면 사용
     elif 'estimated_food_name' in st.session_state and st.session_state.estimated_food_name:
         default_name = st.session_state.estimated_food_name
@@ -528,12 +530,14 @@ def show_add_food():
         default_location_idx = LOCATIONS.index(st.session_state.estimated_food_location) if st.session_state.estimated_food_location in LOCATIONS else 0
         default_expiry_days = st.session_state.estimated_shelf_life.get('estimated_days', 7) if st.session_state.estimated_shelf_life else 7
         default_quantity = 1.0
+        detected_date = None
     else:
         default_name = ""
         default_category_idx = 0
         default_location_idx = 0
         default_expiry_days = 7
         default_quantity = 1.0
+        detected_date = None
 
     # 세션 스테이트에 추천 소비기한 저장
     if 'estimated_shelf_life' not in st.session_state:
@@ -556,11 +560,30 @@ def show_add_food():
             else:
                 expiry_days = default_expiry_days
 
-            # 구매일 기준으로 소비기한 계산 (구매일이 변경되면 자동 반영)
+            # OCR로 읽은 날짜가 있으면 그대로 사용 (고정된 날짜)
+            if detected_date:
+                from datetime import datetime
+                # detected_date가 문자열이면 파싱
+                if isinstance(detected_date, str):
+                    try:
+                        parsed_date = datetime.strptime(detected_date, "%Y-%m-%d").date()
+                        default_expiry_value = parsed_date
+                        expiry_help = "OCR로 읽은 실제 소비기한"
+                    except:
+                        default_expiry_value = purchase_date + timedelta(days=expiry_days)
+                        expiry_help = f"구매일로부터 {expiry_days}일 후"
+                else:
+                    default_expiry_value = detected_date
+                    expiry_help = "OCR로 읽은 실제 소비기한"
+            else:
+                # OCR 날짜가 없으면 구매일 기준으로 계산
+                default_expiry_value = purchase_date + timedelta(days=expiry_days)
+                expiry_help = f"구매일로부터 {expiry_days}일 후"
+
             expiry_date = st.date_input(
                 "소비기한 *",
-                value=purchase_date + timedelta(days=expiry_days),
-                help=f"구매일로부터 {expiry_days}일 후"
+                value=default_expiry_value,
+                help=expiry_help
             )
 
             col2_1, col2_2 = st.columns(2)
