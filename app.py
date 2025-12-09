@@ -713,6 +713,33 @@ def show_food_list():
 
     st.write(f"총 {len(foods)}개의 음식")
 
+    # 📌 재료 요약 섹션
+    st.markdown("### 🛒 냉장고 재료")
+
+    # 음식 이름과 카테고리 아이콘 추출
+    ingredients_data = [(food.name, CATEGORY_ICONS.get(food.category, "📦"), food.category) for food in foods]
+
+    # 상위 10개
+    visible_ingredients = ingredients_data[:10]
+    remaining_ingredients = ingredients_data[10:]
+
+    # 컬러풀한 태그로 표시
+    tags_html = ""
+    for name, icon, category in visible_ingredients:
+        tags_html += f"<span style='display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 8px 15px; margin: 5px; border-radius: 20px; font-size: 14px; font-weight: 500; box-shadow: 0 2px 4px rgba(0,0,0,0.1);'>{icon} {name}</span>"
+
+    st.markdown(f"<div style='margin-bottom: 15px;'>{tags_html}</div>", unsafe_allow_html=True)
+
+    # 나머지 재료 (접기/펼치기)
+    if remaining_ingredients:
+        with st.expander(f"➕ 나머지 {len(remaining_ingredients)}개 재료 보기"):
+            remaining_tags_html = ""
+            for name, icon, category in remaining_ingredients:
+                remaining_tags_html += f"<span style='display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 8px 15px; margin: 5px; border-radius: 20px; font-size: 14px; font-weight: 500; box-shadow: 0 2px 4px rgba(0,0,0,0.1);'>{icon} {name}</span>"
+            st.markdown(f"<div>{remaining_tags_html}</div>", unsafe_allow_html=True)
+
+    st.markdown("---")
+
     # 컴팩트한 카드형 레이아웃
     for food in foods:
         location_icon = LOCATION_ICONS.get(food.location, "📦")
@@ -847,16 +874,31 @@ def show_ai_recommendations():
         st.warning("신선한 재료가 없습니다.")
         return
 
-    # 재료 표시
-    col1, col2 = st.columns(2)
-    with col1:
-        st.write("**전체 재료:**")
-        st.write(", ".join(ingredients))
+    # 재료 표시 - 컬러풀한 태그로
+    st.write("**전체 재료:**")
 
-    with col2:
-        if expiring_ingredients:
-            st.write("**🔴 임박 재료 (우선 사용):**")
-            st.write(", ".join(expiring_ingredients))
+    # 모든 재료를 태그로 표시 (임박 재료는 다른 색상)
+    all_tags_html = ""
+    for food in foods:
+        if food.status() == "만료":
+            continue
+
+        icon = CATEGORY_ICONS.get(food.category, "📦")
+
+        # 임박 재료는 빨간색, 일반 재료는 파란색 그라데이션
+        if food.status() == "임박":
+            bg_gradient = "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)"
+            label = f"{icon} {food.name} ⚠️"
+        else:
+            bg_gradient = "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)"
+            label = f"{icon} {food.name}"
+
+        all_tags_html += f"<span style='display: inline-block; background: {bg_gradient}; color: white; padding: 8px 15px; margin: 5px; border-radius: 20px; font-size: 14px; font-weight: 500; box-shadow: 0 2px 4px rgba(0,0,0,0.1);'>{label}</span>"
+
+    st.markdown(f"<div style='margin-bottom: 15px;'>{all_tags_html}</div>", unsafe_allow_html=True)
+
+    if expiring_ingredients:
+        st.info(f"⚠️ 임박 재료 {len(expiring_ingredients)}개를 우선 사용하는 레시피를 추천합니다.")
 
     st.divider()
 
