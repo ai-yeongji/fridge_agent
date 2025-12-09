@@ -578,8 +578,10 @@ def show_add_food():
             # 추천된 소비기한이 있으면 사용
             if st.session_state.estimated_shelf_life:
                 expiry_days = st.session_state.estimated_shelf_life.get('estimated_days', default_expiry_days)
+                has_ai_recommendation = True
             else:
                 expiry_days = default_expiry_days
+                has_ai_recommendation = False
 
             # OCR로 읽은 날짜가 있으면 그대로 사용 (고정된 날짜)
             if detected_date:
@@ -589,17 +591,23 @@ def show_add_food():
                     try:
                         parsed_date = datetime.strptime(detected_date, "%Y-%m-%d").date()
                         default_expiry_value = parsed_date
-                        expiry_help = "OCR로 읽은 실제 소비기한"
+                        expiry_help = "📸 OCR로 읽은 실제 소비기한"
                     except:
                         default_expiry_value = purchase_date + timedelta(days=expiry_days)
-                        expiry_help = f"구매일로부터 {expiry_days}일 후"
+                        if has_ai_recommendation:
+                            expiry_help = f"🤖 AI 추천: 구매일로부터 {expiry_days}일 후"
+                        else:
+                            expiry_help = "소비기한을 입력하세요 (위에서 AI 추천 또는 사진 분석 가능)"
                 else:
                     default_expiry_value = detected_date
-                    expiry_help = "OCR로 읽은 실제 소비기한"
+                    expiry_help = "📸 OCR로 읽은 실제 소비기한"
             else:
                 # OCR 날짜가 없으면 구매일 기준으로 계산
                 default_expiry_value = purchase_date + timedelta(days=expiry_days)
-                expiry_help = f"구매일로부터 {expiry_days}일 후"
+                if has_ai_recommendation or (ai_result and ai_result.get('confidence', 0) > 50):
+                    expiry_help = f"🤖 AI 추천: 구매일로부터 {expiry_days}일 후"
+                else:
+                    expiry_help = "소비기한을 입력하세요 (위에서 AI 추천 또는 사진 분석 가능)"
 
             expiry_date = st.date_input(
                 "소비기한 *",
