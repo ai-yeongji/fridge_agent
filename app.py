@@ -724,85 +724,101 @@ def show_food_list():
         else:
             days_text = f"D+{abs(days)}"
 
-        with st.container(border=True):
-            # 1줄: 이름 + D-day (전체 너비)
-            st.markdown(f"**{STATUS_COLORS[food.status()]} {location_icon} {food.name}** <span style='font-size: 20px; font-weight: bold; color: #4CAF50; margin-left: 15px;'>{days_text}</span>", unsafe_allow_html=True)
+        # 상태별 카드 배경색 및 D-day 색상
+        status = food.status()
+        if status == "만료":
+            card_bg_color = "#FFEBEE"  # 연한 빨강
+            dday_color = "#9E9E9E"  # 회색
+        elif status == "임박":
+            card_bg_color = "#FFF9C4"  # 연한 노랑
+            if days <= 2:
+                dday_color = "#F44336"  # 빨강
+            else:
+                dday_color = "#FF9800"  # 주황
+        else:  # 신선
+            card_bg_color = "#E8F5E9"  # 연한 초록
+            dday_color = "#4CAF50"  # 초록
 
-            # 2줄: 카테고리/위치/수량 + 소비기한
-            col_info, col_expiry = st.columns([5, 4])
+        # HTML 카드 생성
+        st.markdown(f"""
+        <div style='background-color: {card_bg_color}; padding: 15px; border-radius: 10px; margin-bottom: 10px; border: 1px solid #ddd;'>
+            <div style='margin-bottom: 8px;'>
+                <span style='font-size: 18px; font-weight: bold;'>{STATUS_COLORS[food.status()]} {location_icon} {food.name}</span>
+                <span style='font-size: 22px; font-weight: bold; color: {dday_color}; margin-left: 15px;'>{days_text}</span>
+            </div>
+            <div style='color: #666; font-size: 13px; margin-bottom: 5px;'>
+                {food.category} | {food.location} | {food.quantity} {food.unit}
+            </div>
+            <div style='color: #666; font-size: 13px;'>
+                소비기한: {food.expiry_date.strftime('%m/%d')}
+            </div>
+            {"<div style='color: #666; font-size: 13px; margin-top: 5px;'>📝 " + food.memo + "</div>" if food.memo else ""}
+        </div>
+        """, unsafe_allow_html=True)
 
-            with col_info:
-                st.caption(f"{food.category} | {food.location} | {food.quantity} {food.unit}")
+        # 버튼들은 카드 밖에 배치
+        btn_col1, btn_col2, btn_col3 = st.columns([1, 1, 8])
+        with btn_col1:
+            if st.button("✏️", key=f"edit_{food.id}", help="수정"):
+                st.session_state.editing_food_id = food.id
+                st.rerun()
+        with btn_col2:
+            if st.button("❌", key=f"delete_{food.id}", help="삭제"):
+                db.delete_food(food.id)
+                st.session_state.editing_food_id = None
+                st.rerun()
 
-            with col_expiry:
-                st.caption(f"소비기한: {food.expiry_date.strftime('%m/%d')}")
+        # 편집 폼 표시
+        if st.session_state.editing_food_id == food.id:
+            with st.expander("✏️ 수정하기", expanded=True):
+                with st.form(key=f"edit_form_{food.id}"):
+                    edit_col1, edit_col2 = st.columns(2)
 
-            if food.memo:
-                st.caption(f"📝 {food.memo}")
+                    with edit_col1:
+                        edit_name = st.text_input("음식 이름", value=food.name)
+                        edit_category = st.selectbox("카테고리", CATEGORIES, index=CATEGORIES.index(food.category))
+                        edit_location = st.selectbox("보관 위치", LOCATIONS, index=LOCATIONS.index(food.location))
 
-            # 3줄: 버튼들 (맨 아래)
-            btn_col1, btn_col2, btn_col3 = st.columns([1, 1, 8])
-            with btn_col1:
-                if st.button("✏️", key=f"edit_{food.id}", help="수정"):
-                    st.session_state.editing_food_id = food.id
-                    st.rerun()
-            with btn_col2:
-                if st.button("❌", key=f"delete_{food.id}", help="삭제"):
-                    db.delete_food(food.id)
-                    st.session_state.editing_food_id = None
-                    st.rerun()
+                    with edit_col2:
+                        edit_purchase_date = st.date_input("구매일", value=food.purchase_date)
+                        edit_expiry_date = st.date_input("소비기한", value=food.expiry_date)
 
-            # 편집 폼 표시
-            if st.session_state.editing_food_id == food.id:
-                with st.expander("✏️ 수정하기", expanded=True):
-                    with st.form(key=f"edit_form_{food.id}"):
-                        edit_col1, edit_col2 = st.columns(2)
+                        edit_col2_1, edit_col2_2 = st.columns(2)
+                        with edit_col2_1:
+                            edit_quantity = st.number_input("수량", min_value=1, value=int(food.quantity) if food.quantity >= 1 else 1, step=1)
+                        with edit_col2_2:
+                            edit_unit = st.selectbox("단위", UNITS, index=UNITS.index(food.unit) if food.unit in UNITS else 0)
 
-                        with edit_col1:
-                            edit_name = st.text_input("음식 이름", value=food.name)
-                            edit_category = st.selectbox("카테고리", CATEGORIES, index=CATEGORIES.index(food.category))
-                            edit_location = st.selectbox("보관 위치", LOCATIONS, index=LOCATIONS.index(food.location))
+                    edit_memo = st.text_area("메모", value=food.memo if food.memo else "")
 
-                        with edit_col2:
-                            edit_purchase_date = st.date_input("구매일", value=food.purchase_date)
-                            edit_expiry_date = st.date_input("소비기한", value=food.expiry_date)
-
-                            edit_col2_1, edit_col2_2 = st.columns(2)
-                            with edit_col2_1:
-                                edit_quantity = st.number_input("수량", min_value=1, value=int(food.quantity) if food.quantity >= 1 else 1, step=1)
-                            with edit_col2_2:
-                                edit_unit = st.selectbox("단위", UNITS, index=UNITS.index(food.unit) if food.unit in UNITS else 0)
-
-                        edit_memo = st.text_area("메모", value=food.memo if food.memo else "")
-
-                        col_save, col_cancel = st.columns(2)
-                        with col_save:
-                            if st.form_submit_button("💾 저장", use_container_width=True):
-                                if not edit_name:
-                                    st.error("음식 이름을 입력해주세요.")
-                                elif edit_expiry_date < edit_purchase_date:
-                                    st.error("소비기한은 구매일보다 이후여야 합니다.")
-                                else:
-                                    db.update_food(
-                                        food.id,
-                                        name=edit_name,
-                                        category=edit_category,
-                                        purchase_date=edit_purchase_date,
-                                        expiry_date=edit_expiry_date,
-                                        location=edit_location,
-                                        quantity=edit_quantity,
-                                        unit=edit_unit,
-                                        memo=edit_memo if edit_memo else None
-                                    )
-                                    st.success(f"✅ '{edit_name}'이(가) 수정되었습니다!")
-                                    st.session_state.editing_food_id = None
-                                    st.rerun()
-                        with col_cancel:
-                            if st.form_submit_button("❌ 취소", use_container_width=True):
+                    col_save, col_cancel = st.columns(2)
+                    with col_save:
+                        if st.form_submit_button("💾 저장", use_container_width=True):
+                            if not edit_name:
+                                st.error("음식 이름을 입력해주세요.")
+                            elif edit_expiry_date < edit_purchase_date:
+                                st.error("소비기한은 구매일보다 이후여야 합니다.")
+                            else:
+                                db.update_food(
+                                    food.id,
+                                    name=edit_name,
+                                    category=edit_category,
+                                    purchase_date=edit_purchase_date,
+                                    expiry_date=edit_expiry_date,
+                                    location=edit_location,
+                                    quantity=edit_quantity,
+                                    unit=edit_unit,
+                                    memo=edit_memo if edit_memo else None
+                                )
+                                st.success(f"✅ '{edit_name}'이(가) 수정되었습니다!")
                                 st.session_state.editing_food_id = None
                                 st.rerun()
+                    with col_cancel:
+                        if st.form_submit_button("❌ 취소", use_container_width=True):
+                            st.session_state.editing_food_id = None
+                            st.rerun()
 
-            st.divider()
+        st.divider()
 
 
 def show_ai_recommendations():
