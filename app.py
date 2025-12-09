@@ -795,11 +795,101 @@ def show_ai_recommendations():
                 recipes = agent.get_recipe_suggestions(ingredients)
 
                 st.subheader("📖 추천 레시피")
+
+                # 레시피 표시
                 st.markdown(recipes)
+
+                # 복사 및 다운로드 버튼
+                st.divider()
+                col1, col2 = st.columns(2)
+
+                with col1:
+                    # 복사 버튼 (code 블록 사용)
+                    with st.expander("📋 레시피 복사하기"):
+                        st.code(recipes, language=None)
+
+                with col2:
+                    # 다운로드 버튼
+                    from datetime import datetime
+                    filename = f"레시피_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+                    st.download_button(
+                        label="💾 레시피 다운로드",
+                        data=recipes,
+                        file_name=filename,
+                        mime="text/plain",
+                        use_container_width=True
+                    )
 
             except Exception as e:
                 st.error(f"❌ 레시피 추천 중 오류가 발생했습니다: {str(e)}")
                 st.info("💡 API 키가 올바른지 확인해주세요.")
+
+    st.divider()
+
+    # 대화형 AI 질문 섹션
+    st.subheader("💬 AI에게 요리 질문하기")
+    st.caption("아니면 직접 AI에게 요리 관련 질문을 해보세요!")
+
+    # 채팅 히스토리 초기화
+    if 'chat_messages' not in st.session_state:
+        st.session_state.chat_messages = []
+
+    # 이전 대화 표시
+    for message in st.session_state.chat_messages:
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
+
+    # 채팅 입력
+    if user_question := st.chat_input("예: 된장찌개 끓이는 법 알려줘", key="cooking_chat_input"):
+        # 사용자 메시지 추가
+        st.session_state.chat_messages.append({"role": "user", "content": user_question})
+        with st.chat_message("user"):
+            st.markdown(user_question)
+
+        # AI 응답 생성
+        with st.chat_message("assistant"):
+            with st.spinner("AI가 답변을 생성하고 있습니다..."):
+                try:
+                    agent = FoodRecognitionAgent(api_key=api_key)
+                    response = agent.ask_cooking_question(user_question, ingredients)
+                    st.markdown(response)
+                    st.session_state.chat_messages.append({"role": "assistant", "content": response})
+                except Exception as e:
+                    error_msg = f"❌ 답변 생성 중 오류가 발생했습니다: {str(e)}"
+                    st.error(error_msg)
+
+    # 대화 내역 관리 버튼
+    if st.session_state.chat_messages:
+        st.divider()
+        col1, col2, col3 = st.columns(3)
+
+        with col1:
+            if st.button("🗑️ 대화 내역 지우기", key="clear_chat", use_container_width=True):
+                st.session_state.chat_messages = []
+                st.rerun()
+
+        with col2:
+            # 전체 대화 내용 포맷팅
+            conversation_text = ""
+            for msg in st.session_state.chat_messages:
+                role = "질문" if msg["role"] == "user" else "답변"
+                conversation_text += f"[{role}]\n{msg['content']}\n\n"
+
+            # 복사용 expander
+            with st.expander("📋 대화 복사하기"):
+                st.code(conversation_text, language=None)
+
+        with col3:
+            # 다운로드 버튼
+            from datetime import datetime
+            filename = f"요리대화_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+            st.download_button(
+                label="💾 대화 다운로드",
+                data=conversation_text,
+                file_name=filename,
+                mime="text/plain",
+                use_container_width=True
+            )
 
 
 if __name__ == "__main__":

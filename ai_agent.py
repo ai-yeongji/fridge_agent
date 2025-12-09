@@ -270,3 +270,51 @@ JSON만 반환하고 다른 설명은 추가하지 마세요."""
         except Exception as e:
             print(f"레시피 추천 오류: {e}")
             return f"레시피 추천 중 오류가 발생했습니다: {str(e)}"
+
+    def ask_cooking_question(self, question, ingredients=None):
+        """
+        요리 관련 질문에 답변
+
+        Args:
+            question: 사용자의 질문
+            ingredients: 냉장고에 있는 재료 리스트 (선택사항)
+
+        Returns:
+            str: AI의 답변
+        """
+        if not question or question.strip() == "":
+            return "질문을 입력해주세요."
+
+        # 냉장고 재료 정보를 컨텍스트에 포함
+        context = ""
+        if ingredients and len(ingredients) > 0:
+            context = f"\n\n참고: 현재 냉장고에 있는 재료는 다음과 같습니다:\n{', '.join(ingredients)}"
+
+        prompt = f"""당신은 전문 요리사이자 영양 상담가입니다. 사용자의 요리 관련 질문에 친절하고 상세하게 답변해주세요.{context}
+
+사용자 질문: {question}
+
+답변 시 다음을 고려해주세요:
+- 실용적이고 구체적인 답변 제공
+- 냉장고에 있는 재료를 활용한 제안 (재료 정보가 있는 경우)
+- 적절한 조리 시간과 온도
+- 보관 및 식품 안전 정보
+- 영양 정보 (필요한 경우)"""
+
+        try:
+            response = self.client.chat.completions.create(
+                model="gpt-4o",
+                messages=[
+                    {
+                        "role": "user",
+                        "content": prompt
+                    }
+                ],
+                max_tokens=1500
+            )
+
+            return response.choices[0].message.content
+
+        except Exception as e:
+            print(f"요리 질문 답변 오류: {e}")
+            return f"답변 중 오류가 발생했습니다: {str(e)}"
