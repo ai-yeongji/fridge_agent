@@ -45,6 +45,10 @@ class FoodRecognitionAgent:
         example_egg_expiry = example_egg_date + timedelta(days=40)
         example_days_left = (example_egg_expiry - today).days
 
+        # 날짜 문자열 미리 포맷
+        example_egg_date_str = f"{example_egg_date.year}-{example_egg_date.month:02d}-{example_egg_date.day:02d}"
+        today_short = f"{today.month}/{today.day}"
+
         prompt = f"""이 이미지에 있는 음식을 분석해주세요.
 
 **중요: 이미지에 날짜가 적혀있다면 반드시 OCR로 읽어서 실제 소비기한을 계산하세요!**
@@ -74,8 +78,8 @@ class FoodRecognitionAgent:
 }
 
 예시:
-- 계란 10개, "1201" 표시 → 12월 1일 산란 → 소비기한 {example_egg_expiry.year}년 {example_egg_expiry.month}월 {example_egg_expiry.day}일 → 오늘({today.month}/{today.day}) 기준 {example_days_left}일 남음
-  {{"name": "달걀", "category": "유제품", "estimated_shelf_life_days": {example_days_left}, "location": "냉장", "quantity": 10, "confidence": 95, "detected_date": "{example_egg_date.year}-{example_egg_date.month:02d}-{example_egg_date.day:02d}"}}
+- 계란 10개, "1201" 표시 → 12월 1일 산란 → 소비기한 {example_egg_expiry.year}년 {example_egg_expiry.month}월 {example_egg_expiry.day}일 → 오늘({today_short}) 기준 {example_days_left}일 남음
+  {{"name": "달걀", "category": "유제품", "estimated_shelf_life_days": {example_days_left}, "location": "냉장", "quantity": 10, "confidence": 95, "detected_date": "{example_egg_date_str}"}}
 - 우유 1팩, "2024.12.15" → 소비기한 12월 15일 → 남은 일수 계산
   {{"name": "우유", "category": "유제품", "estimated_shelf_life_days": (계산된 일수), "location": "냉장", "quantity": 1, "confidence": 95, "detected_date": "2024-12-15"}}
 - 사과 3개, 날짜 없음 → 일반적인 소비기한 추정
