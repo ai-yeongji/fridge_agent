@@ -69,7 +69,7 @@ class FoodRecognitionAgent:
 다음 정보를 JSON 형식으로 정확하게 반환해주세요:
 {{
     "name": "음식 이름 (한글, 구체적으로)",
-    "category": "카테고리 (채소/육류/유제품/과일/조미료/음료/기타 중 하나)",
+    "category": "카테고리 (채소/과일/육류/해산물/계란/두부/유제품/쌀/잡곡/조미료/소스/반찬/김치/즉석식품/밀키트/빵/디저트/음료/기타 중 가장 적합한 것)",
     "estimated_shelf_life_days": 소비기한까지 남은 일수 (오늘 기준, 숫자만),
     "location": "보관 위치 (냉장/냉동/실온 중 하나)",
     "quantity": 이미지에 보이는 개수 (숫자만, 정확히 세기),
@@ -79,11 +79,13 @@ class FoodRecognitionAgent:
 
 예시:
 - 계란 10개, "1201" 표시 → 12월 1일 산란 → 소비기한 {example_egg_expiry.year}년 {example_egg_expiry.month}월 {example_egg_expiry.day}일 → 오늘({today_short}) 기준 {example_days_left}일 남음
-  {{"name": "달걀", "category": "유제품", "estimated_shelf_life_days": {example_days_left}, "location": "냉장", "quantity": 10, "confidence": 95, "detected_date": "{example_egg_date_str}"}}
+  {{"name": "달걀", "category": "계란", "estimated_shelf_life_days": {example_days_left}, "location": "냉장", "quantity": 10, "confidence": 95, "detected_date": "{example_egg_date_str}"}}
 - 우유 1팩, "2024.12.15" → 소비기한 12월 15일 → 남은 일수 계산
   {{"name": "우유", "category": "유제품", "estimated_shelf_life_days": (계산된 일수), "location": "냉장", "quantity": 1, "confidence": 95, "detected_date": "2024-12-15"}}
 - 사과 3개, 날짜 없음 → 일반적인 소비기한 추정
   {{"name": "사과", "category": "과일", "estimated_shelf_life_days": 14, "location": "냉장", "quantity": 3, "confidence": 90, "detected_date": null}}
+- 김치 1팩 → 반찬 카테고리
+  {{"name": "김치", "category": "반찬", "estimated_shelf_life_days": 30, "location": "냉장", "quantity": 1, "confidence": 95, "detected_date": null}}
 
 같은 종류의 음식이 여러 개 있다면 개수를 정확히 세서 quantity에 입력해주세요.
 음식이 아닌 것으로 판단되면 confidence를 0으로 설정하세요.
