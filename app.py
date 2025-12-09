@@ -844,42 +844,59 @@ def show_ai_recommendations():
         st.info("💡 .env 파일을 만들고 다음과 같이 설정하세요:\n```\nOPENAI_API_KEY=sk-proj-xxxxx\n```")
         return
 
+    # 레시피 세션 스테이트 초기화
+    if 'generated_recipes' not in st.session_state:
+        st.session_state.generated_recipes = None
+
     # 레시피 추천 버튼
-    if st.button("🍳 AI 레시피 추천 받기", type="primary", use_container_width=True):
-        with st.spinner("AI가 레시피를 추천하고 있습니다..."):
-            try:
-                agent = FoodRecognitionAgent(api_key=api_key)
-                recipes = agent.get_recipe_suggestions(ingredients)
+    col_btn1, col_btn2 = st.columns([3, 1])
+    with col_btn1:
+        if st.button("🍳 AI 레시피 추천 받기", type="primary", use_container_width=True):
+            with st.spinner("AI가 레시피를 추천하고 있습니다..."):
+                try:
+                    agent = FoodRecognitionAgent(api_key=api_key)
+                    recipes = agent.get_recipe_suggestions(ingredients)
+                    st.session_state.generated_recipes = recipes
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"❌ 레시피 추천 중 오류가 발생했습니다: {str(e)}")
+                    st.info("💡 API 키가 올바른지 확인해주세요.")
 
-                st.subheader("📖 추천 레시피")
+    with col_btn2:
+        if st.session_state.generated_recipes:
+            if st.button("🗑️ 레시피 지우기", use_container_width=True):
+                st.session_state.generated_recipes = None
+                st.rerun()
 
-                # 레시피 표시
-                st.markdown(recipes)
+    # 생성된 레시피가 있으면 표시
+    if st.session_state.generated_recipes:
+        st.divider()
+        with st.container(border=True):
+            st.subheader("📖 추천 레시피")
 
-                # 복사 및 다운로드 버튼
-                st.divider()
-                col1, col2 = st.columns(2)
+            # 레시피 표시
+            st.markdown(st.session_state.generated_recipes)
 
-                with col1:
-                    # 복사 버튼 (code 블록 사용)
-                    with st.expander("📋 레시피 복사하기"):
-                        st.code(recipes, language=None)
+            # 복사 및 다운로드 버튼
+            st.divider()
+            col1, col2 = st.columns(2)
 
-                with col2:
-                    # 다운로드 버튼
-                    from datetime import datetime
-                    filename = f"레시피_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
-                    st.download_button(
-                        label="💾 레시피 다운로드",
-                        data=recipes,
-                        file_name=filename,
-                        mime="text/plain",
-                        use_container_width=True
-                    )
+            with col1:
+                # 복사 버튼 (code 블록 사용)
+                with st.expander("📋 레시피 복사하기"):
+                    st.code(st.session_state.generated_recipes, language=None)
 
-            except Exception as e:
-                st.error(f"❌ 레시피 추천 중 오류가 발생했습니다: {str(e)}")
-                st.info("💡 API 키가 올바른지 확인해주세요.")
+            with col2:
+                # 다운로드 버튼
+                from datetime import datetime
+                filename = f"레시피_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+                st.download_button(
+                    label="💾 레시피 다운로드",
+                    data=st.session_state.generated_recipes,
+                    file_name=filename,
+                    mime="text/plain",
+                    use_container_width=True
+                )
 
     st.divider()
 
