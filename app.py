@@ -743,16 +743,16 @@ def show_food_list():
         st.markdown(f"""
         <div style='background-color: {card_bg_color}; padding: 15px; border-radius: 10px; margin-bottom: 10px; border: 1px solid #ddd;'>
             <div style='margin-bottom: 8px;'>
-                <span style='font-size: 18px; font-weight: bold;'>{STATUS_COLORS[food.status()]} {location_icon} {food.name}</span>
+                <span style='font-size: 18px; font-weight: bold; color: #333;'>{STATUS_COLORS[food.status()]} {location_icon} {food.name}</span>
                 <span style='font-size: 22px; font-weight: bold; color: {dday_color}; margin-left: 15px;'>{days_text}</span>
             </div>
-            <div style='color: #666; font-size: 13px; margin-bottom: 5px;'>
+            <div style='color: #555; font-size: 13px; margin-bottom: 5px;'>
                 {food.category} | {food.location} | {food.quantity} {food.unit}
             </div>
-            <div style='color: #666; font-size: 13px;'>
+            <div style='color: #555; font-size: 13px;'>
                 소비기한: {food.expiry_date.strftime('%m/%d')}
             </div>
-            {"<div style='color: #666; font-size: 13px; margin-top: 5px;'>📝 " + food.memo + "</div>" if food.memo else ""}
+            {"<div style='color: #555; font-size: 13px; margin-top: 5px;'>📝 " + food.memo + "</div>" if food.memo else ""}
         </div>
         """, unsafe_allow_html=True)
 
