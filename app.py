@@ -58,6 +58,37 @@ LOCATION_COLORS = {
     "실온": "#FFF9C4"   # 연한 노랑
 }
 
+# 카테고리별 아이콘 및 색상
+CATEGORY_ICONS = {
+    "채소": "🥬",
+    "과일": "🍎",
+    "육류/해산물": "🥩",
+    "계란/두부": "🥚",
+    "유제품": "🥛",
+    "쌀/잡곡": "🌾",
+    "조미료/소스": "🧂",
+    "반찬/김치": "🥘",
+    "즉석식품/밀키트": "🍱",
+    "빵/디저트": "🍰",
+    "음료": "🥤",
+    "기타": "📦"
+}
+
+CATEGORY_COLORS = {
+    "채소": "#C8E6C9",      # 연한 초록
+    "과일": "#FFCCBC",      # 연한 주황
+    "육류/해산물": "#D7CCC8",  # 연한 갈색
+    "계란/두부": "#FFF9C4",    # 연한 노랑
+    "유제품": "#E1F5FE",     # 연한 하늘색
+    "쌀/잡곡": "#F0E68C",    # 카키색
+    "조미료/소스": "#F5F5F5",   # 연한 회색
+    "반찬/김치": "#FFCDD2",    # 연한 빨강
+    "즉석식품/밀키트": "#FFE0B2", # 연한 오렌지
+    "빵/디저트": "#F8BBD0",    # 연한 핑크
+    "음료": "#B3E5FC",      # 연한 파랑
+    "기타": "#E0E0E0"       # 회색
+}
+
 
 def fix_image_orientation(image_bytes):
     """EXIF 정보를 읽어서 이미지 방향 수정"""
@@ -209,6 +240,20 @@ def show_dashboard():
         category_data = {}
         for food in all_foods:
             category_data[food.category] = category_data.get(food.category, 0) + 1
+
+        # 카테고리별 카드 형식으로 표시
+        cols = st.columns(4)
+        for idx, (category, count) in enumerate(sorted(category_data.items(), key=lambda x: x[1], reverse=True)):
+            with cols[idx % 4]:
+                icon = CATEGORY_ICONS.get(category, "📦")
+                color = CATEGORY_COLORS.get(category, "#E0E0E0")
+                st.markdown(f"""
+                    <div style="background-color: {color}; padding: 15px; border-radius: 10px; text-align: center; margin-bottom: 10px;">
+                        <div style="font-size: 32px;">{icon}</div>
+                        <div style="font-size: 14px; font-weight: bold;">{category}</div>
+                        <div style="font-size: 24px; font-weight: bold; color: #333;">{count}개</div>
+                    </div>
+                """, unsafe_allow_html=True)
 
         df = pd.DataFrame(list(category_data.items()), columns=['카테고리', '개수'])
         st.bar_chart(df.set_index('카테고리'))
@@ -408,6 +453,9 @@ def show_add_food():
                 # AI 결과 및 추정 소비기한 초기화
                 st.session_state.ai_result = None
                 st.session_state.estimated_shelf_life = None
+
+                # 페이지 새로고침 (입력 폼 초기화)
+                st.rerun()
 
 
 def show_food_list():
