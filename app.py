@@ -710,29 +710,25 @@ def show_food_list():
             days_text = f"D+{abs(days)}"
 
         with st.container(border=True):
-            # 1줄: 이름 + 버튼들
-            col_name, col_btns = st.columns([7, 2])
+            # 1줄: 이름 + D-day + 버튼들 (한 줄에 모두)
+            col_name, col_dday, col_btn1, col_btn2 = st.columns([5, 2, 1, 1])
 
             with col_name:
                 st.markdown(f"**{STATUS_COLORS[food.status()]} {location_icon} {food.name}**")
 
-            with col_btns:
-                # 버튼을 inline으로 표시
-                st.markdown(f"""
-                <div style='text-align: right;'>
-                    <span style='font-size: 20px;'>
-                """, unsafe_allow_html=True)
-                btn_col1, btn_col2 = st.columns([1, 1])
-                with btn_col1:
-                    if st.button("✏️", key=f"edit_{food.id}", help="수정"):
-                        st.session_state.editing_food_id = food.id
-                        st.rerun()
-                with btn_col2:
-                    if st.button("❌", key=f"delete_{food.id}", help="삭제"):
-                        db.delete_food(food.id)
-                        st.session_state.editing_food_id = None
-                        st.rerun()
-                st.markdown("</span></div>", unsafe_allow_html=True)
+            with col_dday:
+                st.markdown(f"<div style='text-align: center; font-size: 18px; font-weight: bold; padding-top: 3px;'>{days_text}</div>", unsafe_allow_html=True)
+
+            with col_btn1:
+                if st.button("✏️", key=f"edit_{food.id}", help="수정"):
+                    st.session_state.editing_food_id = food.id
+                    st.rerun()
+
+            with col_btn2:
+                if st.button("❌", key=f"delete_{food.id}", help="삭제"):
+                    db.delete_food(food.id)
+                    st.session_state.editing_food_id = None
+                    st.rerun()
 
             # 2줄: 카테고리/위치/수량 + 소비기한
             col_info, col_expiry = st.columns([5, 4])
@@ -741,7 +737,7 @@ def show_food_list():
                 st.caption(f"{food.category} | {food.location} | {food.quantity} {food.unit}")
 
             with col_expiry:
-                st.caption(f"소비기한: {food.expiry_date.strftime('%m/%d')} ({days_text})")
+                st.caption(f"소비기한: {food.expiry_date.strftime('%m/%d')}")
 
             if food.memo:
                 st.caption(f"📝 {food.memo}")
