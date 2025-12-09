@@ -1,0 +1,7 @@
+streamlit==1.31.0
+sqlalchemy==2.0.25
+python-dateutil==2.8.2
+openai>=1.0.0
+pillow==10.2.0
+pandas==2.2.0
+python-dotenv==1.0.0
