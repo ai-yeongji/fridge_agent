@@ -698,46 +698,37 @@ def show_food_list():
 
     st.write(f"총 {len(foods)}개의 음식")
 
-    # 테이블로 표시
+    # 컴팩트한 카드형 레이아웃
     for food in foods:
         location_icon = LOCATION_ICONS.get(food.location, "📦")
         location_color = LOCATION_COLORS.get(food.location, "#FFFFFF")
 
-        with st.container():
-            # 배경색으로 보관 위치 구분
-            st.markdown(f"""
-            <div style="background-color: {location_color}; padding: 10px; border-radius: 5px; margin-bottom: 5px;">
-            </div>
-            """, unsafe_allow_html=True)
+        days = food.days_until_expiry()
+        if days >= 0:
+            days_text = f"D-{days}"
+        else:
+            days_text = f"D+{abs(days)}"
 
-            col1, col2, col3, col4, col5 = st.columns([3, 2, 2, 1, 1])
+        with st.container(border=True):
+            # 1줄: 이름 + D-day + 버튼들
+            col_main, col_dday, col_btns = st.columns([5, 2, 2])
 
-            with col1:
-                st.write(f"{STATUS_COLORS[food.status()]} {location_icon} **{food.name}**")
-                st.caption(f"{food.category} | {food.location}")
+            with col_main:
+                st.markdown(f"**{STATUS_COLORS[food.status()]} {location_icon} {food.name}**")
+                st.caption(f"{food.category} | {food.location} | {food.quantity} {food.unit}")
 
-            with col2:
-                st.write(f"구매: {food.purchase_date}")
+            with col_dday:
+                st.markdown(f"<div style='text-align: right; padding-top: 5px;'><strong>{days_text}</strong></div>", unsafe_allow_html=True)
+                st.caption(f"{food.expiry_date.strftime('%m/%d')}")
 
-            with col3:
-                st.write(f"만료: {food.expiry_date}")
-                days = food.days_until_expiry()
-                if days >= 0:
-                    st.caption(f"D-{days}")
-                else:
-                    st.caption(f"{abs(days)}일 전 만료")
-
-            with col4:
-                st.write(f"{food.quantity} {food.unit}")
-
-            with col5:
-                col5_1, col5_2 = st.columns(2)
-                with col5_1:
-                    if st.button("✏️", key=f"edit_{food.id}", help="수정"):
+            with col_btns:
+                btn_col1, btn_col2 = st.columns(2)
+                with btn_col1:
+                    if st.button("✏️", key=f"edit_{food.id}", help="수정", use_container_width=True):
                         st.session_state.editing_food_id = food.id
                         st.rerun()
-                with col5_2:
-                    if st.button("❌", key=f"delete_{food.id}", help="삭제"):
+                with btn_col2:
+                    if st.button("❌", key=f"delete_{food.id}", help="삭제", use_container_width=True):
                         db.delete_food(food.id)
                         st.session_state.editing_food_id = None
                         st.rerun()
