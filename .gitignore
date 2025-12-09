@@ -46,6 +46,11 @@ Thumbs.db
 # Streamlit
 .streamlit/secrets.toml
 
+# Google Calendar API
+credentials.json
+token.pickle
+*.pickle
+
 # Test images
 *.JPG
 *.jpg

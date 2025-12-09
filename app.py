@@ -9,6 +9,7 @@ import os
 from dotenv import load_dotenv
 from database import Database, FoodItem
 from ai_agent import FoodRecognitionAgent
+from calendar_integration import GoogleCalendarIntegration
 from PIL import Image
 import io
 
@@ -158,6 +159,95 @@ def show_dashboard():
     with col3:
         st.metric("만료됨", len(expired), delta=None, delta_color="inverse")
 
+    # 날짜별 소비기한 캘린더 (맨 위로 이동)
+    if all_foods:
+        st.subheader("📅 소비기한 캘린더 (향후 1개월)")
+
+        # 향후 30일간의 날짜별 만료 음식 그룹화
+        from collections import defaultdict
+        calendar_data = defaultdict(list)
+        today = date.today()
+
+        for food in all_foods:
+            if food.expiry_date >= today and food.expiry_date <= today + timedelta(days=30):
+                calendar_data[food.expiry_date].append(food)
+
+        if calendar_data:
+            # 날짜순으로 정렬
+            sorted_dates = sorted(calendar_data.keys())
+
+            for expiry_date in sorted_dates:
+                foods = calendar_data[expiry_date]
+                days_left = (expiry_date - today).days
+
+                # 날짜별 카드
+                if days_left == 0:
+                    date_label = f"🚨 오늘 ({expiry_date.strftime('%m/%d %a')})"
+                    date_color = "#FFCDD2"  # 빨강
+                elif days_left <= 3:
+                    date_label = f"⚠️ D-{days_left} ({expiry_date.strftime('%m/%d %a')})"
+                    date_color = "#FFE082"  # 노랑
+                else:
+                    date_label = f"📌 D-{days_left} ({expiry_date.strftime('%m/%d %a')})"
+                    date_color = "#E3F2FD"  # 파랑
+
+                with st.expander(f"{date_label} - {len(foods)}개", expanded=(days_left <= 3)):
+                    for food in foods:
+                        col1, col2, col3 = st.columns([2, 1, 1])
+                        with col1:
+                            category_icon = CATEGORY_ICONS.get(food.category, "📦")
+                            location_icon = LOCATION_ICONS.get(food.location, "📦")
+                            st.write(f"{category_icon} **{food.name}** {location_icon}")
+                        with col2:
+                            st.write(f"{food.quantity} {food.unit}")
+                        with col3:
+                            st.write(f"{food.category}")
+        else:
+            st.info("📌 향후 1개월 내 만료 예정인 음식이 없습니다.")
+
+        # 구글 캘린더 동기화 버튼 (credentials.json이 있을 때만 표시)
+        if os.path.exists('credentials.json'):
+            st.markdown("---")
+            col_sync1, col_sync2, col_sync3 = st.columns([1, 1, 1])
+
+            with col_sync1:
+                if st.button("📅 구글 캘린더 동기화", type="primary", use_container_width=True):
+                    with st.spinner("구글 캘린더에 동기화하는 중..."):
+                        try:
+                            calendar = GoogleCalendarIntegration()
+
+                            # 향후 30일 내 만료 예정 음식만 동기화
+                            foods_to_sync = [food for food in all_foods
+                                           if food.expiry_date >= date.today()
+                                           and food.expiry_date <= date.today() + timedelta(days=30)]
+
+                            if foods_to_sync:
+                                success_count, fail_count = calendar.sync_food_items(foods_to_sync)
+                                if success_count > 0:
+                                    st.success(f"✅ {success_count}개 음식을 구글 캘린더에 추가했습니다!")
+                                if fail_count > 0:
+                                    st.warning(f"⚠️ {fail_count}개 음식 동기화 실패")
+                            else:
+                                st.info("동기화할 음식이 없습니다.")
+                        except Exception as e:
+                            st.error(f"동기화 오류: {str(e)}")
+
+            with col_sync2:
+                if st.button("🗑️ 캘린더 이벤트 삭제", use_container_width=True):
+                    with st.spinner("구글 캘린더에서 냉요 이벤트를 삭제하는 중..."):
+                        try:
+                            calendar = GoogleCalendarIntegration()
+                            deleted_count = calendar.delete_expiry_events()
+                            if deleted_count > 0:
+                                st.success(f"✅ {deleted_count}개 이벤트를 삭제했습니다!")
+                            else:
+                                st.info("삭제할 이벤트가 없습니다.")
+                        except Exception as e:
+                            st.error(f"삭제 오류: {str(e)}")
+
+            with col_sync3:
+                st.info("💡 첫 사용 시 구글 계정 로그인이 필요합니다")
+
     # 보관 위치별 통계 (클릭 가능)
     if all_foods:
         st.subheader("📍 보관 위치별 현황 (클릭하여 상세보기)")
@@ -257,52 +347,6 @@ def show_dashboard():
 
         df = pd.DataFrame(list(category_data.items()), columns=['카테고리', '개수'])
         st.bar_chart(df.set_index('카테고리'))
-
-    # 날짜별 소비기한 캘린더
-    if all_foods:
-        st.subheader("📅 소비기한 캘린더 (향후 2주)")
-
-        # 향후 14일간의 날짜별 만료 음식 그룹화
-        from collections import defaultdict
-        calendar_data = defaultdict(list)
-        today = date.today()
-
-        for food in all_foods:
-            if food.expiry_date >= today and food.expiry_date <= today + timedelta(days=14):
-                calendar_data[food.expiry_date].append(food)
-
-        if calendar_data:
-            # 날짜순으로 정렬
-            sorted_dates = sorted(calendar_data.keys())
-
-            for expiry_date in sorted_dates:
-                foods = calendar_data[expiry_date]
-                days_left = (expiry_date - today).days
-
-                # 날짜별 카드
-                if days_left == 0:
-                    date_label = f"🚨 오늘 ({expiry_date.strftime('%m/%d %a')})"
-                    date_color = "#FFCDD2"  # 빨강
-                elif days_left <= 3:
-                    date_label = f"⚠️ D-{days_left} ({expiry_date.strftime('%m/%d %a')})"
-                    date_color = "#FFE082"  # 노랑
-                else:
-                    date_label = f"📌 D-{days_left} ({expiry_date.strftime('%m/%d %a')})"
-                    date_color = "#E3F2FD"  # 파랑
-
-                with st.expander(f"{date_label} - {len(foods)}개", expanded=(days_left <= 3)):
-                    for food in foods:
-                        col1, col2, col3 = st.columns([2, 1, 1])
-                        with col1:
-                            category_icon = CATEGORY_ICONS.get(food.category, "📦")
-                            location_icon = LOCATION_ICONS.get(food.location, "📦")
-                            st.write(f"{category_icon} **{food.name}** {location_icon}")
-                        with col2:
-                            st.write(f"{food.quantity} {food.unit}")
-                        with col3:
-                            st.write(f"{food.category}")
-        else:
-            st.info("📌 향후 2주 내 만료 예정인 음식이 없습니다.")
 
 
 def show_add_food():

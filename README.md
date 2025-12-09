@@ -12,6 +12,7 @@
 - 📈 카테고리별 음식 분포 차트
 - 🤖 AI 소비기한 추정 및 레시피 추천 (GPT-4o)
 - 🔄 보관 위치별 필터링 (냉장/냉동/실온)
+- 📅 **구글 캘린더 연동** - 소비기한 자동 동기화 및 알림
 
 ## 기술 스택
 
@@ -60,6 +61,20 @@ cp .env.example .env
 OPENAI_API_KEY=sk-proj-xxxxx
 ```
 
+### 5. 구글 캘린더 연동 설정 (선택사항)
+
+소비기한을 구글 캘린더에 자동으로 동기화하려면 추가 설정이 필요합니다.
+
+자세한 설정 방법은 **[GOOGLE_CALENDAR_SETUP.md](GOOGLE_CALENDAR_SETUP.md)** 문서를 참고하세요.
+
+**간단 요약:**
+1. 구글 클라우드 콘솔에서 프로젝트 생성
+2. Google Calendar API 활성화
+3. OAuth 클라이언트 ID 생성 (데스크톱 앱)
+4. `credentials.json` 다운로드 후 프로젝트 폴더에 저장
+
+**주의**: 구글 캘린더 연동은 로컬 환경에서만 작동합니다. Streamlit Cloud에서는 파일 시스템 제약으로 사용할 수 없습니다.
+
 ## 실행 방법
 
 ```bash
@@ -98,15 +113,19 @@ streamlit run app.py
 
 ```
 freeze_agent/
-├── app.py              # Streamlit 메인 앱
-├── database.py         # 데이터베이스 모델 및 CRUD
-├── ai_agent.py         # AI 에이전트 (Vision API, 레시피 추천)
-├── requirements.txt    # Python 패키지 의존성
-├── .env.example       # 환경 변수 템플릿
-├── .env               # 환경 변수 (직접 생성 필요)
-├── .gitignore         # Git 무시 파일
-├── fridge.db          # SQLite 데이터베이스 (실행시 자동 생성)
-└── README.md          # 프로젝트 문서
+├── app.py                    # Streamlit 메인 앱
+├── database.py               # 데이터베이스 모델 및 CRUD
+├── ai_agent.py               # AI 에이전트 (Vision API, 레시피 추천)
+├── calendar_integration.py   # 구글 캘린더 연동
+├── requirements.txt          # Python 패키지 의존성
+├── .env.example             # 환경 변수 템플릿
+├── .env                     # 환경 변수 (직접 생성 필요)
+├── .gitignore               # Git 무시 파일
+├── fridge.db                # SQLite 데이터베이스 (실행시 자동 생성)
+├── credentials.json         # 구글 캘린더 OAuth 인증 파일 (직접 생성 필요)
+├── README.md                # 프로젝트 문서
+├── DEPLOYMENT.md            # Streamlit Cloud 배포 가이드
+└── GOOGLE_CALENDAR_SETUP.md # 구글 캘린더 연동 설정 가이드
 ```
 
 ## 데이터 모델
@@ -131,6 +150,7 @@ freeze_agent/
 - [x] AI를 활용한 소비기한 추정 ✅
 - [x] AI를 활용한 레시피 추천 ✅
 - [x] 음식 수정 기능 ✅
+- [x] 구글 캘린더 연동 및 알림 ✅
 - [ ] 영수증 OCR로 일괄 등록
 - [ ] 바코드/QR 스캔 기능
 - [ ] 음성 입력 지원
