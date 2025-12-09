@@ -87,53 +87,19 @@ def main():
     st.title("🧚 냉요(냉장고 요정) - 냉장고를 부탁해!")
     st.caption("냉장고 음식 소비기한 관리 및 레시피 추천 에이전트")
 
-    # 사이드바 스타일 및 동작 개선
-    st.markdown("""
-        <style>
-        /* 사이드바 너비 축소 */
-        [data-testid="stSidebar"] {
-            min-width: 200px;
-            max-width: 200px;
-        }
-        [data-testid="stSidebar"] > div:first-child {
-            width: 200px;
-        }
-        </style>
+    # 탭 메뉴
+    tab1, tab2, tab3, tab4 = st.tabs(["📊 대시보드", "➕ 음식 추가", "📝 음식 목록", "🤖 AI 추천"])
 
-        <script>
-        // 라디오 버튼 클릭 시 사이드바 자동으로 접기
-        const doc = window.parent.document;
-        const radioButtons = doc.querySelectorAll('[data-testid="stSidebar"] input[type="radio"]');
-        radioButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                setTimeout(() => {
-                    const closeButton = doc.querySelector('[data-testid="collapsedControl"]');
-                    if (!closeButton) {
-                        const sidebar = doc.querySelector('[data-testid="stSidebar"]');
-                        if (sidebar) {
-                            const collapseBtn = sidebar.querySelector('button[kind="header"]');
-                            if (collapseBtn) collapseBtn.click();
-                        }
-                    }
-                }, 100);
-            });
-        });
-        </script>
-    """, unsafe_allow_html=True)
-
-    # 사이드바 메뉴
-    menu = st.sidebar.radio(
-        "메뉴",
-        ["📊 대시보드", "➕ 음식 추가", "📝 음식 목록", "🤖 AI 추천"]
-    )
-
-    if menu == "📊 대시보드":
+    with tab1:
         show_dashboard()
-    elif menu == "➕ 음식 추가":
+
+    with tab2:
         show_add_food()
-    elif menu == "📝 음식 목록":
+
+    with tab3:
         show_food_list()
-    elif menu == "🤖 AI 추천":
+
+    with tab4:
         show_ai_recommendations()
 
 
@@ -251,64 +217,85 @@ def show_add_food():
 
     # AI 이미지 인식 섹션
     st.subheader("📸 사진으로 빠르게 추가")
+    st.caption("💡 여러 장 업로드 가능 (앞면, 뒷면 등)")
 
-    uploaded_file = st.file_uploader(
+    uploaded_files = st.file_uploader(
         "음식 사진을 업로드하세요 (AI가 자동으로 인식합니다)",
         type=['jpg', 'jpeg', 'png'],
-        help="음식 사진을 업로드하면 AI가 자동으로 음식 정보를 추출합니다."
+        accept_multiple_files=True,
+        help="여러 장의 사진을 업로드할 수 있습니다 (예: 앞면, 뒷면)"
     )
 
     # 세션 스테이트 초기화
     if 'ai_result' not in st.session_state:
         st.session_state.ai_result = None
 
-    if uploaded_file is not None:
-        col1, col2 = st.columns([1, 2])
+    if uploaded_files:
+        # 업로드된 이미지 미리보기
+        cols = st.columns(min(len(uploaded_files), 4))
+        fixed_images = []
 
-        # 이미지 방향 수정
-        image_bytes = uploaded_file.read()
-        fixed_image_bytes = fix_image_orientation(image_bytes)
+        for idx, uploaded_file in enumerate(uploaded_files):
+            # 이미지 방향 수정
+            image_bytes = uploaded_file.read()
+            fixed_image_bytes = fix_image_orientation(image_bytes)
+            fixed_images.append((fixed_image_bytes, uploaded_file))
 
-        with col1:
-            st.image(fixed_image_bytes, caption="업로드된 이미지", use_column_width=True)
+            with cols[idx % 4]:
+                st.image(fixed_image_bytes, caption=f"사진 {idx+1}", use_column_width=True)
 
-        with col2:
-            if st.button("🤖 AI로 분석하기", type="primary"):
-                with st.spinner("AI가 이미지를 분석하고 있습니다..."):
-                    try:
-                        # API 키 확인
-                        api_key = os.getenv('OPENAI_API_KEY')
-                        if not api_key:
-                            st.error("⚠️ OPENAI_API_KEY가 설정되지 않았습니다. .env 파일을 확인해주세요.")
+        if st.button("🤖 AI로 분석하기", type="primary"):
+            with st.spinner("AI가 이미지를 분석하고 있습니다..."):
+                try:
+                    # API 키 확인
+                    api_key = os.getenv('OPENAI_API_KEY')
+                    if not api_key:
+                        st.error("⚠️ OPENAI_API_KEY가 설정되지 않았습니다. .env 파일을 확인해주세요.")
+                    else:
+                        agent = FoodRecognitionAgent(api_key=api_key)
+
+                        # 첫 번째 이미지로 기본 분석
+                        first_image_bytes, first_file = fixed_images[0]
+                        image_base64 = base64.b64encode(first_image_bytes).decode('utf-8')
+                        image_type = f"image/{first_file.type.split('/')[-1]}"
+
+                        # AI 분석
+                        result = agent.analyze_food_image(image_base64, image_type)
+
+                        # 여러 이미지가 있으면 추가 분석 (날짜 정보 등)
+                        if len(fixed_images) > 1:
+                            st.info(f"📸 {len(fixed_images)}장의 사진을 분석했습니다.")
+                            for idx, (img_bytes, img_file) in enumerate(fixed_images[1:], start=2):
+                                try:
+                                    img_base64 = base64.b64encode(img_bytes).decode('utf-8')
+                                    img_type = f"image/{img_file.type.split('/')[-1]}"
+                                    extra_result = agent.analyze_food_image(img_base64, img_type)
+
+                                    # 추가 이미지에서 날짜 정보가 있으면 업데이트
+                                    if extra_result.get('detected_date') and not result.get('detected_date'):
+                                        result['detected_date'] = extra_result['detected_date']
+                                        result['estimated_shelf_life_days'] = extra_result['estimated_shelf_life_days']
+                                        st.success(f"✅ 사진 {idx}에서 날짜 정보를 발견했습니다!")
+                                except:
+                                    continue
+
+                        # 결과 저장
+                        st.session_state.ai_result = result
+
+                        # 분석 결과 표시
+                        if result['confidence'] > 50:
+                            st.success(f"✅ **{result['name']}** 인식 완료! (신뢰도: {result['confidence']}%)")
+                            st.info(f"📦 카테고리: {result['category']}\n"
+                                   f"🏠 보관위치: {result['location']}\n"
+                                   f"🔢 수량: {result.get('quantity', 1)}개\n"
+                                   f"📅 예상 소비기한: {result['estimated_shelf_life_days']}일")
                         else:
-                            agent = FoodRecognitionAgent(api_key=api_key)
+                            st.warning(f"⚠️ 음식을 명확하게 인식하지 못했습니다. (신뢰도: {result['confidence']}%)\n"
+                                      "수동으로 입력해주세요.")
 
-                            # 이미지를 base64로 인코딩 (방향 수정된 이미지 사용)
-                            image_base64 = base64.b64encode(fixed_image_bytes).decode('utf-8')
-
-                            # 이미지 타입 결정
-                            image_type = f"image/{uploaded_file.type.split('/')[-1]}"
-
-                            # AI 분석
-                            result = agent.analyze_food_image(image_base64, image_type)
-
-                            # 결과 저장
-                            st.session_state.ai_result = result
-
-                            # 분석 결과 표시
-                            if result['confidence'] > 50:
-                                st.success(f"✅ **{result['name']}** 인식 완료! (신뢰도: {result['confidence']}%)")
-                                st.info(f"📦 카테고리: {result['category']}\n"
-                                       f"🏠 보관위치: {result['location']}\n"
-                                       f"🔢 수량: {result.get('quantity', 1)}개\n"
-                                       f"📅 예상 소비기한: {result['estimated_shelf_life_days']}일")
-                            else:
-                                st.warning(f"⚠️ 음식을 명확하게 인식하지 못했습니다. (신뢰도: {result['confidence']}%)\n"
-                                          "수동으로 입력해주세요.")
-
-                    except Exception as e:
-                        st.error(f"❌ 이미지 분석 중 오류가 발생했습니다: {str(e)}")
-                        st.info("💡 API 키가 올바른지, 인터넷 연결이 되어있는지 확인해주세요.")
+                except Exception as e:
+                    st.error(f"❌ 이미지 분석 중 오류가 발생했습니다: {str(e)}")
+                    st.info("💡 API 키가 올바른지, 인터넷 연결이 되어있는지 확인해주세요.")
 
     st.divider()
 
