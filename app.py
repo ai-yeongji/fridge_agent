@@ -258,6 +258,52 @@ def show_dashboard():
         df = pd.DataFrame(list(category_data.items()), columns=['카테고리', '개수'])
         st.bar_chart(df.set_index('카테고리'))
 
+    # 날짜별 소비기한 캘린더
+    if all_foods:
+        st.subheader("📅 소비기한 캘린더 (향후 2주)")
+
+        # 향후 14일간의 날짜별 만료 음식 그룹화
+        from collections import defaultdict
+        calendar_data = defaultdict(list)
+        today = date.today()
+
+        for food in all_foods:
+            if food.expiry_date >= today and food.expiry_date <= today + timedelta(days=14):
+                calendar_data[food.expiry_date].append(food)
+
+        if calendar_data:
+            # 날짜순으로 정렬
+            sorted_dates = sorted(calendar_data.keys())
+
+            for expiry_date in sorted_dates:
+                foods = calendar_data[expiry_date]
+                days_left = (expiry_date - today).days
+
+                # 날짜별 카드
+                if days_left == 0:
+                    date_label = f"🚨 오늘 ({expiry_date.strftime('%m/%d %a')})"
+                    date_color = "#FFCDD2"  # 빨강
+                elif days_left <= 3:
+                    date_label = f"⚠️ D-{days_left} ({expiry_date.strftime('%m/%d %a')})"
+                    date_color = "#FFE082"  # 노랑
+                else:
+                    date_label = f"📌 D-{days_left} ({expiry_date.strftime('%m/%d %a')})"
+                    date_color = "#E3F2FD"  # 파랑
+
+                with st.expander(f"{date_label} - {len(foods)}개", expanded=(days_left <= 3)):
+                    for food in foods:
+                        col1, col2, col3 = st.columns([2, 1, 1])
+                        with col1:
+                            category_icon = CATEGORY_ICONS.get(food.category, "📦")
+                            location_icon = LOCATION_ICONS.get(food.location, "📦")
+                            st.write(f"{category_icon} **{food.name}** {location_icon}")
+                        with col2:
+                            st.write(f"{food.quantity} {food.unit}")
+                        with col3:
+                            st.write(f"{food.category}")
+        else:
+            st.info("📌 향후 2주 내 만료 예정인 음식이 없습니다.")
+
 
 def show_add_food():
     """음식 추가 화면"""
