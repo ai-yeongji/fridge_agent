@@ -20,7 +20,7 @@ st.set_page_config(
     page_title="냉요",
     page_icon="🧚",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"  # 모바일에서 사이드바 기본 접힘
 )
 
 # 데이터베이스 초기화
