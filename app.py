@@ -462,11 +462,11 @@ def show_add_food():
     with st.expander("🔍 소비기한 모를 때? AI가 자동으로 추천해드립니다!", expanded=False):
         col_a, col_b, col_c = st.columns(3)
         with col_a:
-            search_name = st.text_input("음식 이름", placeholder="예: 토마토, 두부")
+            search_name = st.text_input("음식 이름", placeholder="예: 토마토, 두부", key=f"search_name_{st.session_state.form_key}")
         with col_b:
-            search_category = st.selectbox("카테고리", CATEGORIES, key="search_category")
+            search_category = st.selectbox("카테고리", CATEGORIES, key=f"search_category_{st.session_state.form_key}")
         with col_c:
-            search_location = st.selectbox("보관 위치", LOCATIONS, key="search_location")
+            search_location = st.selectbox("보관 위치", LOCATIONS, key=f"search_location_{st.session_state.form_key}")
 
         if st.button("🤖 소비기한 자동 추천 받기", type="primary", use_container_width=True):
             if not search_name:
