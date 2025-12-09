@@ -186,7 +186,7 @@ JSON만 반환하고 다른 설명은 추가하지 마세요."""
 
         try:
             response = self.client.chat.completions.create(
-                model="gpt-4o",
+                model="gpt-4o-mini",
                 messages=[
                     {
                         "role": "user",
@@ -255,7 +255,7 @@ JSON만 반환하고 다른 설명은 추가하지 마세요."""
 
         try:
             response = self.client.chat.completions.create(
-                model="gpt-4o",
+                model="gpt-4o-mini",
                 messages=[
                     {
                         "role": "user",
@@ -303,7 +303,7 @@ JSON만 반환하고 다른 설명은 추가하지 마세요."""
 
         try:
             response = self.client.chat.completions.create(
-                model="gpt-4o",
+                model="gpt-4o-mini",
                 messages=[
                     {
                         "role": "user",
