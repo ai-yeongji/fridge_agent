@@ -67,7 +67,7 @@ class FoodRecognitionAgent:
 오늘 날짜: {today_str}
 
 다음 정보를 JSON 형식으로 정확하게 반환해주세요:
-{
+{{
     "name": "음식 이름 (한글, 구체적으로)",
     "category": "카테고리 (채소/육류/유제품/과일/조미료/음료/기타 중 하나)",
     "estimated_shelf_life_days": 소비기한까지 남은 일수 (오늘 기준, 숫자만),
@@ -75,7 +75,7 @@ class FoodRecognitionAgent:
     "quantity": 이미지에 보이는 개수 (숫자만, 정확히 세기),
     "confidence": "인식 신뢰도 (0-100 사이 숫자)",
     "detected_date": "이미지에서 읽은 날짜 (없으면 null)"
-}
+}}
 
 예시:
 - 계란 10개, "1201" 표시 → 12월 1일 산란 → 소비기한 {example_egg_expiry.year}년 {example_egg_expiry.month}월 {example_egg_expiry.day}일 → 오늘({today_short}) 기준 {example_days_left}일 남음
