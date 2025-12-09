@@ -87,6 +87,40 @@ def main():
     st.title("🧚 냉요(냉장고 요정) - 냉장고를 부탁해!")
     st.caption("냉장고 음식 소비기한 관리 및 레시피 추천 에이전트")
 
+    # 사이드바 스타일 및 동작 개선
+    st.markdown("""
+        <style>
+        /* 사이드바 너비 축소 */
+        [data-testid="stSidebar"] {
+            min-width: 200px;
+            max-width: 200px;
+        }
+        [data-testid="stSidebar"] > div:first-child {
+            width: 200px;
+        }
+        </style>
+
+        <script>
+        // 라디오 버튼 클릭 시 사이드바 자동으로 접기
+        const doc = window.parent.document;
+        const radioButtons = doc.querySelectorAll('[data-testid="stSidebar"] input[type="radio"]');
+        radioButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                setTimeout(() => {
+                    const closeButton = doc.querySelector('[data-testid="collapsedControl"]');
+                    if (!closeButton) {
+                        const sidebar = doc.querySelector('[data-testid="stSidebar"]');
+                        if (sidebar) {
+                            const collapseBtn = sidebar.querySelector('button[kind="header"]');
+                            if (collapseBtn) collapseBtn.click();
+                        }
+                    }
+                }, 100);
+            });
+        });
+        </script>
+    """, unsafe_allow_html=True)
+
     # 사이드바 메뉴
     menu = st.sidebar.radio(
         "메뉴",
