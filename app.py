@@ -543,6 +543,21 @@ def show_add_food():
     if 'estimated_shelf_life' not in st.session_state:
         st.session_state.estimated_shelf_life = None
 
+    # 구매일을 폼 밖에서 먼저 선택 (실시간 업데이트를 위해)
+    st.write("**📅 구매일 선택**")
+    purchase_date = st.date_input(
+        "구매일",
+        value=date.today(),
+        key="purchase_date_outside_form",
+        help="구매일을 먼저 선택하면 소비기한이 자동으로 계산됩니다"
+    )
+
+    # AI 추정 또는 이미지 분석 결과가 있을 때 실시간 계산 표시
+    if (st.session_state.estimated_shelf_life or (ai_result and ai_result['confidence'] > 50)) and not detected_date:
+        # OCR 날짜가 없는 경우에만 계산 표시
+        calculated_expiry = purchase_date + timedelta(days=default_expiry_days)
+        st.success(f"✅ **예상 소비기한**: {calculated_expiry.strftime('%Y년 %m월 %d일')} ({default_expiry_days}일 후)")
+
     with st.form(key=f"add_food_form_{st.session_state.form_key}"):
         col1, col2 = st.columns(2)
 
@@ -552,7 +567,6 @@ def show_add_food():
             location = st.selectbox("보관 위치 *", LOCATIONS, index=default_location_idx)
 
         with col2:
-            purchase_date = st.date_input("구매일 *", value=date.today(), key="purchase_date_input")
 
             # 추천된 소비기한이 있으면 사용
             if st.session_state.estimated_shelf_life:
