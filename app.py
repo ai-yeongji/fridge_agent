@@ -874,31 +874,50 @@ def show_ai_recommendations():
         st.warning("신선한 재료가 없습니다.")
         return
 
-    # 재료 표시 - 컬러풀한 태그로
-    st.write("**전체 재료:**")
+    # 선택된 재료 세션 스테이트 초기화
+    if 'selected_ingredients' not in st.session_state:
+        st.session_state.selected_ingredients = set()
 
-    # 모든 재료를 태그로 표시 (임박 재료는 다른 색상)
-    all_tags_html = ""
-    for food in foods:
-        if food.status() == "만료":
-            continue
+    # 재료 선택 UI
+    st.write("**재료를 선택하세요** (클릭하여 선택/해제)")
 
-        icon = CATEGORY_ICONS.get(food.category, "📦")
+    # 신선한 재료 리스트
+    fresh_foods = [f for f in foods if f.status() != "만료"]
 
-        # 임박 재료는 빨간색, 일반 재료는 파란색 그라데이션
-        if food.status() == "임박":
-            bg_gradient = "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)"
-            label = f"{icon} {food.name} ⚠️"
-        else:
-            bg_gradient = "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)"
-            label = f"{icon} {food.name}"
+    # 재료를 버튼으로 표시 (5개씩 행으로)
+    for i in range(0, len(fresh_foods), 5):
+        cols = st.columns(5)
+        for j, food in enumerate(fresh_foods[i:i+5]):
+            with cols[j]:
+                icon = CATEGORY_ICONS.get(food.category, "📦")
+                is_selected = food.name in st.session_state.selected_ingredients
+                is_expiring = food.status() == "임박"
 
-        all_tags_html += f"<span style='display: inline-block; background: {bg_gradient}; color: white; padding: 8px 15px; margin: 5px; border-radius: 20px; font-size: 14px; font-weight: 500; box-shadow: 0 2px 4px rgba(0,0,0,0.1);'>{label}</span>"
+                # 버튼 라벨
+                if is_expiring:
+                    label = f"{icon} {food.name} ⚠️"
+                else:
+                    label = f"{icon} {food.name}"
 
-    st.markdown(f"<div style='margin-bottom: 15px;'>{all_tags_html}</div>", unsafe_allow_html=True)
+                # 선택 여부에 따라 버튼 타입 변경
+                button_type = "primary" if is_selected else "secondary"
+
+                if st.button(label, key=f"ingredient_btn_{food.id}", type=button_type, use_container_width=True):
+                    # 토글
+                    if is_selected:
+                        st.session_state.selected_ingredients.remove(food.name)
+                    else:
+                        st.session_state.selected_ingredients.add(food.name)
+                    st.rerun()
+
+    # 선택된 재료 표시
+    if st.session_state.selected_ingredients:
+        st.success(f"✅ 선택된 재료 ({len(st.session_state.selected_ingredients)}개): {', '.join(sorted(st.session_state.selected_ingredients))}")
+    else:
+        st.info("💡 재료를 선택하거나, 전체 재료로 레시피를 추천받을 수 있습니다.")
 
     if expiring_ingredients:
-        st.info(f"⚠️ 임박 재료 {len(expiring_ingredients)}개를 우선 사용하는 레시피를 추천합니다.")
+        st.warning(f"⚠️ 임박 재료 {len(expiring_ingredients)}개를 우선 선택하는 것을 추천합니다!")
 
     st.divider()
 
@@ -914,9 +933,28 @@ def show_ai_recommendations():
         st.session_state.generated_recipes = None
 
     # 레시피 추천 버튼
-    col_btn1, col_btn2 = st.columns([3, 1])
+    col_btn1, col_btn2, col_btn3 = st.columns([2, 2, 1])
+
     with col_btn1:
-        if st.button("🍳 AI 레시피 추천 받기", type="primary", use_container_width=True):
+        # 선택한 재료로 레시피 추천
+        if st.session_state.selected_ingredients:
+            if st.button(f"🍳 선택한 재료로 레시피 추천 ({len(st.session_state.selected_ingredients)}개)", type="primary", use_container_width=True):
+                with st.spinner("AI가 맞춤 레시피를 추천하고 있습니다..."):
+                    try:
+                        agent = FoodRecognitionAgent(api_key=api_key)
+                        selected_list = list(st.session_state.selected_ingredients)
+                        recipes = agent.get_recipe_suggestions(selected_list)
+                        st.session_state.generated_recipes = recipes
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"❌ 레시피 추천 중 오류가 발생했습니다: {str(e)}")
+                        st.info("💡 API 키가 올바른지 확인해주세요.")
+        else:
+            st.button(f"🍳 선택한 재료로 레시피 추천", disabled=True, use_container_width=True)
+
+    with col_btn2:
+        # 전체 재료로 레시피 추천
+        if st.button(f"🍳 전체 재료로 레시피 추천 ({len(ingredients)}개)", use_container_width=True):
             with st.spinner("AI가 레시피를 추천하고 있습니다..."):
                 try:
                     agent = FoodRecognitionAgent(api_key=api_key)
@@ -927,9 +965,9 @@ def show_ai_recommendations():
                     st.error(f"❌ 레시피 추천 중 오류가 발생했습니다: {str(e)}")
                     st.info("💡 API 키가 올바른지 확인해주세요.")
 
-    with col_btn2:
+    with col_btn3:
         if st.session_state.generated_recipes:
-            if st.button("🗑️ 레시피 지우기", use_container_width=True):
+            if st.button("🗑️ 지우기", use_container_width=True):
                 st.session_state.generated_recipes = None
                 st.rerun()
 
