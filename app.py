@@ -447,12 +447,13 @@ def show_add_food():
                     unit=unit,
                     memo=memo
                 )
-                st.success(f"✅ '{name}'이(가) 추가되었습니다!")
-                st.balloons()
-
                 # AI 결과 및 추정 소비기한 초기화
                 st.session_state.ai_result = None
                 st.session_state.estimated_shelf_life = None
+
+                # 성공 메시지 (토스트는 rerun 후에도 표시됨)
+                st.toast(f"✅ '{name}' 추가 완료!", icon="✅")
+                st.balloons()
 
                 # 페이지 새로고침 (입력 폼 초기화)
                 st.rerun()
