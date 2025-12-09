@@ -548,7 +548,7 @@ def show_add_food():
             location = st.selectbox("보관 위치 *", LOCATIONS, index=default_location_idx)
 
         with col2:
-            purchase_date = st.date_input("구매일 *", value=date.today())
+            purchase_date = st.date_input("구매일 *", value=date.today(), key="purchase_date_input")
 
             # 추천된 소비기한이 있으면 사용
             if st.session_state.estimated_shelf_life:
@@ -556,7 +556,12 @@ def show_add_food():
             else:
                 expiry_days = default_expiry_days
 
-            expiry_date = st.date_input("소비기한 *", value=date.today() + timedelta(days=expiry_days))
+            # 구매일 기준으로 소비기한 계산 (구매일이 변경되면 자동 반영)
+            expiry_date = st.date_input(
+                "소비기한 *",
+                value=purchase_date + timedelta(days=expiry_days),
+                help=f"구매일로부터 {expiry_days}일 후"
+            )
 
             col2_1, col2_2 = st.columns(2)
             with col2_1:
