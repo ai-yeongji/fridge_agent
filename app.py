@@ -567,6 +567,13 @@ def show_add_food():
             location = st.selectbox("보관 위치 *", LOCATIONS, index=default_location_idx)
 
         with col2:
+            # 등록일 (오늘 날짜, 읽기 전용)
+            registration_date = st.date_input(
+                "등록일",
+                value=date.today(),
+                disabled=True,
+                help="앱에 음식을 등록하는 날짜"
+            )
 
             # 추천된 소비기한이 있으면 사용
             if st.session_state.estimated_shelf_life:
