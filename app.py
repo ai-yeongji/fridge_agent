@@ -423,7 +423,7 @@ def show_add_food():
 
             col2_1, col2_2 = st.columns(2)
             with col2_1:
-                quantity = st.number_input("수량", min_value=0.1, value=default_quantity, step=0.1)
+                quantity = st.number_input("수량", min_value=1, value=int(default_quantity) if default_quantity >= 1 else 1, step=1)
             with col2_2:
                 unit = st.selectbox("단위", UNITS)
 
@@ -556,7 +556,7 @@ def show_food_list():
 
                             edit_col2_1, edit_col2_2 = st.columns(2)
                             with edit_col2_1:
-                                edit_quantity = st.number_input("수량", min_value=0.1, value=float(food.quantity), step=0.1)
+                                edit_quantity = st.number_input("수량", min_value=1, value=int(food.quantity) if food.quantity >= 1 else 1, step=1)
                             with edit_col2_2:
                                 edit_unit = st.selectbox("단위", UNITS, index=UNITS.index(food.unit) if food.unit in UNITS else 0)
 
