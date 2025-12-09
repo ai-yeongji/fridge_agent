@@ -509,7 +509,7 @@ def show_add_food():
         st.success(st.session_state.success_message)
         st.toast(st.session_state.success_message, icon="✅")
         st.balloons()
-        st.session_state.success_message = None
+        del st.session_state.success_message
 
     # AI 결과가 있으면 자동으로 폼에 입력
     ai_result = st.session_state.ai_result
