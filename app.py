@@ -263,6 +263,18 @@ def show_add_food():
     """음식 추가 화면"""
     st.header("➕ 음식 추가")
 
+    # 탭 진입 시 이전 완료 상태 초기화
+    if 'food_added_flag' not in st.session_state:
+        st.session_state.food_added_flag = False
+
+    if st.session_state.food_added_flag:
+        # 음식 추가 후 다른 탭 갔다가 돌아온 경우 초기화
+        st.session_state.ai_result = None
+        st.session_state.estimated_shelf_life = None
+        if 'uploader_key' in st.session_state:
+            st.session_state.uploader_key += 1
+        st.session_state.food_added_flag = False
+
     # AI 이미지 인식 섹션
     st.subheader("📸 사진으로 빠르게 추가")
     st.caption("💡 여러 장 업로드 가능 (앞면, 뒷면 등)")
@@ -458,6 +470,9 @@ def show_add_food():
 
                 # 파일 업로더 키 변경 (파일 업로더 리셋)
                 st.session_state.uploader_key += 1
+
+                # 음식 추가 완료 플래그 설정 (다른 탭 갔다가 돌아오면 초기화)
+                st.session_state.food_added_flag = True
 
                 # 성공 메시지 (토스트는 rerun 후에도 표시됨)
                 st.toast(f"✅ '{name}' 추가 완료!", icon="✅")
