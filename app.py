@@ -191,7 +191,7 @@ def show_dashboard():
                     date_label = f"📌 D-{days_left} ({expiry_date.strftime('%m/%d %a')})"
                     date_color = "#E3F2FD"  # 파랑
 
-                with st.expander(f"{date_label} - {len(foods)}개", expanded=(days_left <= 3)):
+                with st.expander(f"{date_label} - {len(foods)}개", expanded=(days_left <= 14)):
                     for food in foods:
                         col1, col2, col3 = st.columns([2, 1, 1])
                         with col1:
@@ -373,6 +373,10 @@ def show_add_food():
     if 'uploader_key' not in st.session_state:
         st.session_state.uploader_key = 0
 
+    # 폼 키 초기화 (음식 추가 후 폼 리셋용)
+    if 'form_key' not in st.session_state:
+        st.session_state.form_key = 0
+
     uploaded_files = st.file_uploader(
         "음식 사진을 업로드하세요 (AI가 자동으로 인식합니다)",
         type=['jpg', 'jpeg', 'png'],
@@ -477,8 +481,11 @@ def show_add_food():
                             agent = FoodRecognitionAgent(api_key=api_key)
                             result = agent.estimate_shelf_life(search_name, search_category, search_location)
 
-                            # 결과 저장
+                            # 결과 저장 (음식 정보도 함께 저장)
                             st.session_state.estimated_shelf_life = result
+                            st.session_state.estimated_food_name = search_name
+                            st.session_state.estimated_food_category = search_category
+                            st.session_state.estimated_food_location = search_location
 
                             # 결과 표시
                             st.success(f"✅ **{search_name}** 소비기한 정보를 찾았습니다!")
@@ -490,26 +497,49 @@ def show_add_food():
                             with col_r2:
                                 st.info(f"💡 **보관 팁**\n\n{result['tips']}")
 
-                            st.info("👇 아래 폼에 자동으로 적용됩니다. 음식 이름을 다시 입력하고 '추가하기'를 눌러주세요.")
+                            st.info("👇 아래 폼에 자동으로 적용되었습니다. 확인 후 '추가하기'를 눌러주세요!")
 
                     except Exception as e:
                         st.error(f"❌ 소비기한 추정 중 오류가 발생했습니다: {str(e)}")
 
     st.subheader("📝 음식 정보 입력")
 
+    # 성공 메시지 표시 (폼 바로 위에 표시)
+    if 'success_message' in st.session_state and st.session_state.success_message:
+        st.success(st.session_state.success_message)
+        st.toast(st.session_state.success_message, icon="✅")
+        st.balloons()
+        st.session_state.success_message = None
+
     # AI 결과가 있으면 자동으로 폼에 입력
     ai_result = st.session_state.ai_result
-    default_name = ai_result['name'] if ai_result and ai_result['confidence'] > 50 else ""
-    default_category_idx = CATEGORIES.index(ai_result['category']) if ai_result and ai_result['category'] in CATEGORIES else 0
-    default_location_idx = LOCATIONS.index(ai_result['location']) if ai_result and ai_result['location'] in LOCATIONS else 0
-    default_expiry_days = ai_result['estimated_shelf_life_days'] if ai_result else 7
-    default_quantity = float(ai_result.get('quantity', 1.0)) if ai_result and ai_result['confidence'] > 50 else 1.0
+
+    # 이미지 분석 결과가 있으면 우선 사용
+    if ai_result and ai_result['confidence'] > 50:
+        default_name = ai_result['name']
+        default_category_idx = CATEGORIES.index(ai_result['category']) if ai_result['category'] in CATEGORIES else 0
+        default_location_idx = LOCATIONS.index(ai_result['location']) if ai_result['location'] in LOCATIONS else 0
+        default_expiry_days = ai_result['estimated_shelf_life_days']
+        default_quantity = float(ai_result.get('quantity', 1.0))
+    # 소비기한 추정 결과가 있으면 사용
+    elif 'estimated_food_name' in st.session_state and st.session_state.estimated_food_name:
+        default_name = st.session_state.estimated_food_name
+        default_category_idx = CATEGORIES.index(st.session_state.estimated_food_category) if st.session_state.estimated_food_category in CATEGORIES else 0
+        default_location_idx = LOCATIONS.index(st.session_state.estimated_food_location) if st.session_state.estimated_food_location in LOCATIONS else 0
+        default_expiry_days = st.session_state.estimated_shelf_life.get('estimated_days', 7) if st.session_state.estimated_shelf_life else 7
+        default_quantity = 1.0
+    else:
+        default_name = ""
+        default_category_idx = 0
+        default_location_idx = 0
+        default_expiry_days = 7
+        default_quantity = 1.0
 
     # 세션 스테이트에 추천 소비기한 저장
     if 'estimated_shelf_life' not in st.session_state:
         st.session_state.estimated_shelf_life = None
 
-    with st.form("add_food_form"):
+    with st.form(key=f"add_food_form_{st.session_state.form_key}"):
         col1, col2 = st.columns(2)
 
         with col1:
@@ -554,19 +584,24 @@ def show_add_food():
                     unit=unit,
                     memo=memo
                 )
-                # AI 결과 및 추정 소비기한 초기화
+                # AI 결과 및 추정 소비기한 초기화 (페이지 전체 리셋)
                 st.session_state.ai_result = None
                 st.session_state.estimated_shelf_life = None
+                st.session_state.estimated_food_name = None
+                st.session_state.estimated_food_category = None
+                st.session_state.estimated_food_location = None
 
                 # 파일 업로더 키 변경 (파일 업로더 리셋)
                 st.session_state.uploader_key += 1
 
+                # 폼 키 변경 (폼 완전 리셋)
+                st.session_state.form_key += 1
+
                 # 음식 추가 완료 플래그 설정 (다른 탭 갔다가 돌아오면 초기화)
                 st.session_state.food_added_flag = True
 
-                # 성공 메시지 (토스트는 rerun 후에도 표시됨)
-                st.toast(f"✅ '{name}' 추가 완료!", icon="✅")
-                st.balloons()
+                # 성공 메시지 저장 (rerun 후 표시됨: 상단 메시지 + 팝업 + 풍선)
+                st.session_state.success_message = f"✅ '{name}' 추가 완료!"
 
                 # 페이지 새로고침 (입력 폼 초기화)
                 st.rerun()
